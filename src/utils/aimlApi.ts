@@ -21,7 +21,7 @@ export const getChatResponse = async (text: string): Promise<string | null> => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4', // Or your preferred chat model
+        model: 'openai/gpt-5-chat-latest',
         messages: [systemMessage, { role: 'user', content: text }]
       })
     });

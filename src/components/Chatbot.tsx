@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Send, Mic, MicOff, Volume2, VolumeX, Waves } from 'lucide-react';
 import { getChatResponse } from '../utils/aimlApi';
-import { textToSpeech as elevenLabsTTS } from '../utils/elevenLabsApi';
+import { textToSpeech } from '../utils/voiceApi';
 
 // Type declaration for the Web Speech API
 interface IWindow extends Window {
@@ -133,14 +133,6 @@ const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
     }
   };
 
-  // ElevenLabs API integration for high-quality voice
-  const generateElevenLabsVoice = async (text: string): Promise<void> => {
-    try {
-      await elevenLabsTTS(text);
-    } catch (error) {
-      console.error('ElevenLabs API error:', error);
-    }
-  };
 
   // Play audio with ElevenLabs or fallback to browser TTS
   const playVoiceResponse = async (text: string) => {
@@ -155,11 +147,19 @@ const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
     setIsPlaying(true);
 
     try {
-      // Use our ElevenLabs utility
-      await generateElevenLabsVoice(text);
-      setIsPlaying(false);
-      if (conversationMode && !isListening) {
-        setTimeout(() => startListening(), 500);
+      const audio = await textToSpeech(text);
+      if (audio) {
+        currentAudioRef.current = audio;
+        audio.play();
+        audio.onended = () => {
+          setIsPlaying(false);
+          if (conversationMode && !isListening) {
+            setTimeout(() => startListening(), 500);
+          }
+        };
+      } else {
+        // Fallback to browser TTS if ElevenLabs fails
+        fallbackToSpeechSynthesis(text);
       }
     } catch (error) {
       console.error('Audio playback error:', error);
@@ -247,7 +247,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ onClose }) => {
       const aiResponse = await getChatResponse(text);
 
       if (aiResponse) {
-        // Play the voice response using ElevenLabs
+        // Play the voice response using the voice API
         await playVoiceResponse(aiResponse);
         return aiResponse;
       }

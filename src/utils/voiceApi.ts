@@ -1,43 +1,36 @@
-const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
-const VOICE_ID = 'g8xvkBu0oV7JNCyHaiWS'; // Replace with your preferred voice ID
+const AIMLAPI_KEY = import.meta.env.VITE_AIMLAPI_KEY;
+const TTS_API_URL = 'https://api.aimlapi.com/v1/tts';
 
-export const textToSpeech = async (text: string) => {
-  if (!ELEVENLABS_API_KEY) {
-    console.error('ElevenLabs API key not found.');
-    return;
+export const textToSpeech = async (text: string): Promise<HTMLAudioElement | null> => {
+  if (!AIMLAPI_KEY) {
+    console.error('AIMLAPI key not found.');
+    return null;
   }
 
-  const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
-  const headers = {
-    'Accept': 'audio/mpeg',
-    'Content-Type': 'application/json',
-    'xi-api-key': ELEVENLABS_API_KEY,
-  };
-  const body = JSON.stringify({
-    text,
-    model_id: 'eleven_monolingual_v1',
-    voice_settings: {
-      stability: 0.5,
-      similarity_boost: 0.5,
-    },
-  });
-
   try {
-    const response = await fetch(url, {
+    const response = await fetch(TTS_API_URL, {
       method: 'POST',
-      headers,
-      body,
+      headers: {
+        'Authorization': `Bearer ${AIMLAPI_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'elevenlabs/v3_alpha',
+        text: text,
+        voice: 'Alice'
+      })
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok || !response.body) {
+      throw new Error(`TTS API error! status: ${response.status}`);
     }
 
     const audioBlob = await response.blob();
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
-    audio.play();
+    return audio;
   } catch (error) {
-    console.error('Error with ElevenLabs API:', error);
+    console.error('Error with AIMLAPI TTS:', error);
+    return null;
   }
 };

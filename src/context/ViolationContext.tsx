@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { textToSpeech } from '../utils/elevenLabsApi';
+import { textToSpeech } from '../utils/voiceApi';
 
 export interface Violation {
   id: number;
@@ -49,7 +49,20 @@ export function ViolationProvider({ children }: { children: React.ReactNode }) {
       id: Date.now(),
     };
     setViolations(prev => [newViolation, ...prev]);
-    textToSpeech('New violation detected');
+    
+    // Generate and play the voice notification
+    const playNotification = async () => {
+      try {
+        const audio = await textToSpeech('New speed violation detected');
+        if (audio) {
+          audio.play();
+        }
+      } catch (error) {
+        console.error('Failed to play violation notification:', error);
+      }
+    };
+    
+    playNotification();
   };
 
   const updateViolation = (id: number, updates: Partial<Violation>) => {
